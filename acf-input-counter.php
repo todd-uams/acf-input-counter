@@ -4,7 +4,7 @@
 		Plugin Name: ACF Input Counter
 		Plugin URI: https://github.com/Hube2/acf-input-counter/
 		Description: Show character count for limited text and textarea fields
-		Version: 1.5.1
+		Version: 1.5
 		Author: John A. Huebner II
 		Author URI: https://github.com/Hube2/
 		Text-domain: acf-counter
@@ -26,8 +26,9 @@
 			add_action('plugins_loaded', 					array($this, 'acf_counter_load_plugin_textdomain'));
 			add_action('acf/render_field/type=text', 		array($this, 'render_field'), 20, 1);
 			add_action('acf/render_field/type=textarea', 	array($this, 'render_field'), 20, 1);
+			add_action('acf/render_field/type=wysiwyg', 	array($this, 'render_field'), 20, 1);
 			add_action('acf/input/admin_enqueue_scripts', 	array($this, 'scripts'));
-			add_filter('jh_plugins_list', 					array($this, 'meta_box_data'));
+			// add_filter('jh_plugins_list', 					array($this, 'meta_box_data'));
 		} // end public function __construct
 
 		public function acf_counter_load_plugin_textdomain() {
@@ -73,14 +74,14 @@
 		public function render_field($field) {
 			if (!$this->run() ||
 			    !$field['maxlength'] ||
-			    ($field['type'] != 'text' && $field['type'] != 'textarea')) {
+			    ($field['type'] != 'text' && $field['type'] != 'textarea' && $field['type'] != 'wysiwyg') ) {
 				// only run on text and text area fields when maxlength is set
 				return;
 			}
 			if (function_exists('mb_strlen')) {
-				$len = mb_strlen($field['value']);
+				$len = mb_strlen(wp_strip_all_tags($field['value']));
 			} else {
-				$len = strlen($field['value']);
+				$len = strlen(wp_strip_all_tags($field['value']));
 			}
 			$max = $field['maxlength'];
 
@@ -110,13 +111,13 @@
 				return;
 			}
 			$display = sprintf(
-				__('chars: %1$s of %2$s', 'acf-counter'),
+				__('Characters: %1$s of %2$s', 'acf-counter'),
 				'%%len%%',
 				'%%max%%'
 			);
 			$display = apply_filters('acf-input-counter/display', $display);
 			$display = str_replace('%%len%%', '<span class="count">'.$len.'</span>', $display);
-			$display = str_replace('%%max%%', $max, $display);
+			$display = str_replace('%%max%%', '<span class="maxcount">'.$max.'</span>', $display);
 			$display = str_replace('%%remain%%', ( $max - $len ), $display);
 			?>
 				<span class="char-count">
@@ -159,7 +160,7 @@
 
 
 		} // end function jh_plugins_list_meta_box
-		add_action('add_meta_boxes', 'jh_plugins_list_meta_box');
+		// add_action('add_meta_boxes', 'jh_plugins_list_meta_box');
 
 		function show_blunt_plugins_list_meta_box() {
 			$plugins = apply_filters('jh_plugins_list', array());
